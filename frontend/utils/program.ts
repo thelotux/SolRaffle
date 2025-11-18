@@ -6,7 +6,7 @@ export const PROGRAM_ID = new PublicKey("9Vu2g7S8oxYbk3JmHzjQXdoHguwEwPgVDq6KxAK
 export const DEVNET_ENDPOINT = "https://api.devnet.solana.com";
 
 export function getProgram(provider: AnchorProvider) {
-  return new Program(IDL as any, provider);
+  return new Program(IDL as any, provider) as any;
 }
 
 export function getRafflePda(creator: PublicKey, raffleId: bigint) {

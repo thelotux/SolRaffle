@@ -5,7 +5,7 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { AnchorProvider, BN } from "@coral-xyz/anchor";
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { getProgram, getRafflePda, getTicketPda } from "@/utils/program";
-import { addRaffleToHistory, getRaffleHistory, type RaffleHistoryEntry } from "@/utils/raffleHistory";
+import { addRaffleToHistory, getRaffleHistory, clearHistory, type RaffleHistoryEntry } from "@/utils/raffleHistory";
 
 interface RaffleState {
   active?: {};
@@ -101,8 +101,19 @@ export default function RafflePlatform() {
       const programId = program.programId;
 
       console.log("Fetching program accounts...");
+      // Filter for raffle accounts with correct size (max_len = 20)
+      // 8 (discriminator) + 32 (creator) + 8 (ticket_price) + 4 (max_tickets) +
+      // 8 (end_time) + 4 (total_tickets_sold) + 4 (vec length) + 32*20 (ticket_buyers) +
+      // 1+32 (option winner) + 1 (state) + 1 (bump) + 8 (raffle_id) = 8+32+8+4+8+4+4+640+33+1+1+8 = 751
+      const raffleAccountSize = 751;
+
       const accounts = await connection.getProgramAccounts(programId, {
         commitment: 'confirmed',
+        filters: [
+          {
+            dataSize: raffleAccountSize,
+          },
+        ],
       });
 
       console.log(`✓ Found ${accounts.length} raffle accounts`);
@@ -355,7 +366,7 @@ export default function RafflePlatform() {
       console.log(`Total ticket buyers to pass: ${raffleAccount.ticketBuyers.length}`);
 
       // Prepare remaining accounts array with all ticket buyers
-      const remainingAccounts = raffleAccount.ticketBuyers.map(buyer => ({
+      const remainingAccounts = raffleAccount.ticketBuyers.map((buyer: any) => ({
         pubkey: buyer,
         isSigner: false,
         isWritable: true, // Winner will receive lamports
